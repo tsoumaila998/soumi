@@ -1,0 +1,8 @@
+{
+  "name": "CineVerse - Movies & TV Discovery",
+  "description": "Discover trending movies, popular TV shows, top-rated entertainment, trailers, and curate your personal watchlist with full bilingual English/French support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
