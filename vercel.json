@@ -3,14 +3,6 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/tmdb/(.*)",
-      "destination": "/api/tmdb/$1"
-    },
-    {
-      "source": "/api/health",
-      "destination": "/api/health"
-    },
-    {
       "source": "/((?!api/|favicon\\.svg|soumi-project\\.tar\\.gz).*)",
       "destination": "/index.html"
     }
