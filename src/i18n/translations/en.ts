@@ -195,5 +195,17 @@ export const en = {
     War: "War",
     "War & Politics": "War & Politics",
     Western: "Western",
+  },
+
+  // Where to Watch
+  watchProviders: {
+    title: "Where to Watch",
+    stream: "Stream",
+    rent: "Rent",
+    buy: "Buy",
+    noProviders: "No streaming, rental, or purchase options currently listed for this title in {country}.",
+    viewOnTmdb: "View all watch options on TMDb",
+    changeCountry: "Region:",
+    poweredBy: "Streaming data provided by JustWatch via TMDb",
   }
 };

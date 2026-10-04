@@ -12,6 +12,7 @@ import {
   getSimilarTV,
 } from '../services/tmdb';
 import { CastList } from '../components/CastList';
+import { WatchProviders } from '../components/WatchProviders';
 import { MediaCard } from '../components/MediaCard';
 import { TrailerModal } from '../components/TrailerModal';
 import { ImageWithFallback } from '../components/ImageWithFallback';
@@ -337,6 +338,13 @@ export const DetailPage: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Where to Watch Section */}
+        <WatchProviders
+          mediaId={item.id}
+          mediaType={item.mediaType}
+          title={displayTitle}
+        />
 
         {/* Cast Section (First 10 actors) */}
         {cast.length > 0 && (

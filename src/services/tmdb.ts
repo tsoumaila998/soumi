@@ -562,3 +562,47 @@ export async function getTVGenres(lang: string = 'en'): Promise<GenreItem[]> {
     ];
   }
 }
+
+// 19. Watch Providers
+export interface WatchProviderItem {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+  display_priority: number;
+}
+
+export interface CountryWatchProviders {
+  link?: string;
+  flatrate?: WatchProviderItem[];
+  rent?: WatchProviderItem[];
+  buy?: WatchProviderItem[];
+  free?: WatchProviderItem[];
+  ads?: WatchProviderItem[];
+}
+
+export interface WatchProvidersData {
+  id: number;
+  results: Record<string, CountryWatchProviders>;
+}
+
+export function getProviderLogoUrl(path?: string | null): string {
+  if (!path) return '';
+  return path.startsWith('http') ? path : `https://image.tmdb.org/t/p/w92${path}`;
+}
+
+export async function getWatchProviders(
+  id: string | number,
+  mediaType: 'movie' | 'tv'
+): Promise<WatchProvidersData | null> {
+  try {
+    const endpoint = `${mediaType}/${id}/watch/providers`;
+    const data = await fetchProxy(endpoint);
+    if (data && data.results) {
+      return data as WatchProvidersData;
+    }
+  } catch (err: any) {
+    console.warn(`TMDb watch providers fallback for ${mediaType} ${id}:`, err);
+  }
+  return null;
+}
+

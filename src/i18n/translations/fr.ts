@@ -195,5 +195,17 @@ export const fr = {
     War: "Guerre",
     "War & Politics": "Guerre & Politique",
     Western: "Western",
+  },
+
+  // Where to Watch
+  watchProviders: {
+    title: "Où regarder",
+    stream: "En streaming",
+    rent: "Location",
+    buy: "Achat",
+    noProviders: "Aucune option de streaming, de location ou d'achat actuellement répertoriée pour ce titre en {country}.",
+    viewOnTmdb: "Voir toutes les options sur TMDb",
+    changeCountry: "Région :",
+    poweredBy: "Disponibilité du streaming fournie par JustWatch via TMDb",
   }
 };
