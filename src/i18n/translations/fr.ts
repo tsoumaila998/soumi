@@ -207,5 +207,29 @@ export const fr = {
     viewOnTmdb: "Voir toutes les options sur TMDb",
     changeCountry: "Région :",
     poweredBy: "Disponibilité du streaming fournie par JustWatch via TMDb",
+  },
+
+  // Free Public Domain Movies
+  freeMovies: {
+    title: "Films gratuits",
+    subtitle: "Regardez des films du domaine public légalement gratuits via Archive.org",
+    search: "Rechercher des films gratuits...",
+    sort: {
+      popular: "Plus populaires",
+      newest: "Plus récents",
+      oldest: "Plus anciens",
+      az: "A-Z",
+    },
+    empty: "Aucun film gratuit trouvé.",
+    loading: "Chargement...",
+    downloads: "téléchargements",
+    back: "Retour aux films gratuits",
+    noVideo: "Vidéo indisponible",
+    creator: "Réalisateur / Créateur",
+    year: "Année",
+    watchNow: "Regarder le film",
+    publicDomainBadge: "Domaine public",
+    details: "Détails du film",
+    errorLoading: "Impossible de charger les informations du film. Veuillez réessayer plus tard.",
   }
 };

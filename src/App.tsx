@@ -8,6 +8,8 @@ const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m
 const MoviesPage = lazy(() => import('./pages/MoviesPage').then((m) => ({ default: m.MoviesPage })));
 const TvShowsPage = lazy(() => import('./pages/TvShowsPage').then((m) => ({ default: m.TvShowsPage })));
 const DetailPage = lazy(() => import('./pages/DetailPage').then((m) => ({ default: m.DetailPage })));
+const FreeMoviesPage = lazy(() => import('./pages/FreeMoviesPage').then((m) => ({ default: m.FreeMoviesPage })));
+const FreeMovieDetailPage = lazy(() => import('./pages/FreeMovieDetailPage').then((m) => ({ default: m.FreeMovieDetailPage })));
 const MyListPage = lazy(() => import('./pages/MyListPage').then((m) => ({ default: m.MyListPage })));
 const SearchPage = lazy(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
@@ -32,6 +34,8 @@ export default function App() {
               <Route path="tv" element={<TvShowsPage />} />
               <Route path="movie/:id" element={<DetailPage />} />
               <Route path="tv/:id" element={<DetailPage />} />
+              <Route path="free-movies" element={<FreeMoviesPage />} />
+              <Route path="free-movies/:identifier" element={<FreeMovieDetailPage />} />
               <Route path="my-list" element={<MyListPage />} />
               <Route path="search" element={<SearchPage />} />
               <Route path="*" element={<NotFoundPage />} />

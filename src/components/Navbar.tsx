@@ -40,6 +40,7 @@ export const Navbar: React.FC = () => {
     { name: t('nav.home'), path: '/' },
     { name: t('nav.movies'), path: '/movies' },
     { name: t('nav.tvShows'), path: '/tv' },
+    { name: t('freeMovies.title'), path: '/free-movies' },
     { name: t('nav.myList'), path: '/my-list', badge: myListCount },
   ];
 
