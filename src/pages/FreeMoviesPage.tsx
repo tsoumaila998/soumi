@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Film,
   Search,
@@ -12,12 +12,15 @@ import {
   ChevronRight,
   ShieldCheck,
   Video,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
 import {
   searchPublicDomainMovies,
   getThumbnailUrl,
   cleanArchiveText,
   formatCreator,
+  formatDuration,
   ArchiveDoc,
 } from '../services/archiveService';
 import { ImageWithFallback } from '../components/ImageWithFallback';
@@ -26,7 +29,6 @@ import { usePageSEO } from '../hooks/usePageSEO';
 
 export const FreeMoviesPage: React.FC = () => {
   const { t, language } = useTranslation();
-  const navigate = useNavigate();
 
   usePageSEO({
     title:
@@ -35,8 +37,8 @@ export const FreeMoviesPage: React.FC = () => {
         : 'SOUMI — Free Movies — Public Domain Collection',
     description:
       language === 'fr'
-        ? 'Regardez des milliers de films légalement gratuits du domaine public via Archive.org.'
-        : 'Watch thousands of legally free public domain classic films from Archive.org.',
+        ? 'Regardez des milliers de longs métrages légalement gratuits du domaine public via Archive.org.'
+        : 'Watch thousands of legally free public domain classic feature films from Archive.org.',
   });
 
   const [docs, setDocs] = useState<ArchiveDoc[]>([]);
@@ -44,17 +46,43 @@ export const FreeMoviesPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [queryInput, setQueryInput] = useState<string>('');
   const [activeQuery, setActiveQuery] = useState<string>('');
+  const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [sort, setSort] = useState<string>('popular');
+  const [allowShortFilms, setAllowShortFilms] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   const pageSize = 24;
   const totalPages = Math.min(100, Math.ceil(numFound / pageSize)) || 1;
 
+  const genres = [
+    { key: 'all', label: t('freeMovies.genres.all') },
+    { key: 'horror', label: t('freeMovies.genres.horror') },
+    { key: 'comedy', label: t('freeMovies.genres.comedy') },
+    { key: 'scifi', label: t('freeMovies.genres.scifi') },
+    { key: 'noir', label: t('freeMovies.genres.noir') },
+    { key: 'western', label: t('freeMovies.genres.western') },
+    { key: 'animation', label: t('freeMovies.genres.animation') },
+  ];
+
+  const sortOptions = [
+    { key: 'popular', label: t('freeMovies.sort.popular') },
+    { key: 'newest', label: t('freeMovies.sort.newest') },
+    { key: 'oldest', label: t('freeMovies.sort.oldest') },
+    { key: 'az', label: t('freeMovies.sort.az') },
+    { key: 'longest', label: t('freeMovies.sort.longest') },
+  ];
+
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
 
-    searchPublicDomainMovies(currentPage, activeQuery, sort)
+    searchPublicDomainMovies(
+      currentPage,
+      activeQuery,
+      sort,
+      selectedGenre,
+      allowShortFilms
+    )
       .then((res) => {
         if (!isMounted) return;
         setDocs(res.docs);
@@ -71,7 +99,7 @@ export const FreeMoviesPage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [currentPage, activeQuery, sort]);
+  }, [currentPage, activeQuery, sort, selectedGenre, allowShortFilms]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +110,11 @@ export const FreeMoviesPage: React.FC = () => {
   const handleClearSearch = () => {
     setQueryInput('');
     setActiveQuery('');
+    setCurrentPage(1);
+  };
+
+  const handleGenreSelect = (genreKey: string) => {
+    setSelectedGenre(genreKey);
     setCurrentPage(1);
   };
 
@@ -100,8 +133,8 @@ export const FreeMoviesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Hero Header Banner */}
-      <div className="relative mb-10 p-6 sm:p-10 rounded-3xl bg-gradient-to-r from-[#161622] via-[#12121a] to-[#0a0a0f] border border-white/10 overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 bg-[#e50914]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative mb-8 p-6 sm:p-10 rounded-3xl bg-gradient-to-r from-[#161622] via-[#12121a] to-[#0a0a0f] border border-white/10 overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-72 h-72 bg-[#e50914]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e50914]/15 border border-[#e50914]/30 text-[#e50914] text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -118,8 +151,31 @@ export const FreeMoviesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-8">
+      {/* Genre Pills Filter Bar */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {genres.map((g) => {
+            const isActive = selectedGenre === g.key;
+            return (
+              <button
+                key={g.key}
+                type="button"
+                onClick={() => handleGenreSelect(g.key)}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 shrink-0 ${
+                  isActive
+                    ? 'bg-[#e50914] text-white shadow-lg shadow-[#e50914]/25 scale-102'
+                    : 'bg-[#161622] text-zinc-400 hover:text-white hover:bg-[#1f1f2e] border border-white/5'
+                }`}
+              >
+                {g.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Search Bar & Sorting Controls */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6">
         {/* Search Input */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
           <input
@@ -143,20 +199,15 @@ export const FreeMoviesPage: React.FC = () => {
         </form>
 
         {/* Sort Controls */}
-        <div className="flex items-center gap-2 self-start md:self-auto">
-          <ArrowUpDown className="w-4 h-4 text-zinc-400 shrink-0" />
-          <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[#161622] border border-white/10">
-            {[
-              { key: 'popular', label: t('freeMovies.sort.popular') },
-              { key: 'newest', label: t('freeMovies.sort.newest') },
-              { key: 'oldest', label: t('freeMovies.sort.oldest') },
-              { key: 'az', label: t('freeMovies.sort.az') },
-            ].map((option) => (
+        <div className="flex items-center gap-2 self-start md:self-auto overflow-x-auto pb-1 max-w-full">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#161622] border border-white/10 shrink-0">
+            <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400 ml-1.5 shrink-0" />
+            {sortOptions.map((option) => (
               <button
                 key={option.key}
                 type="button"
                 onClick={() => handleSortChange(option.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   sort === option.key
                     ? 'bg-[#e50914] text-white shadow-md'
                     : 'text-zinc-400 hover:text-white'
@@ -171,7 +222,7 @@ export const FreeMoviesPage: React.FC = () => {
 
       {/* Results Count Banner */}
       {!loading && (
-        <div className="mb-6 flex items-center justify-between text-xs text-zinc-400">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
           <p>
             {activeQuery ? (
               <span>
@@ -179,7 +230,12 @@ export const FreeMoviesPage: React.FC = () => {
               </span>
             ) : (
               <span>
-                Showing <strong className="text-white">{numFound.toLocaleString()}</strong> public domain films
+                Showing <strong className="text-white">{numFound.toLocaleString()}</strong> feature films
+              </span>
+            )}
+            {selectedGenre !== 'all' && (
+              <span className="ml-2 text-zinc-400">
+                in <strong className="text-[#e50914] uppercase">{selectedGenre}</strong>
               </span>
             )}
           </p>
@@ -208,7 +264,7 @@ export const FreeMoviesPage: React.FC = () => {
           {docs.map((doc) => {
             const thumbnailUrl = getThumbnailUrl(doc.identifier);
             const creator = formatCreator(doc.creator);
-            const rawDesc = cleanArchiveText(doc.description);
+            const duration = formatDuration(doc.runtime);
 
             return (
               <Link
@@ -243,6 +299,14 @@ export const FreeMoviesPage: React.FC = () => {
                     </span>
                   </div>
 
+                  {/* Duration badge if available */}
+                  {duration && (
+                    <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-xs text-[10px] font-semibold text-zinc-200 border border-white/10">
+                      <Clock className="w-2.5 h-2.5 text-[#e50914]" />
+                      <span>{duration}</span>
+                    </div>
+                  )}
+
                   {doc.downloads !== undefined && doc.downloads > 0 && (
                     <div className="absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-black/75 backdrop-blur-xs text-[10px] font-semibold text-zinc-300 border border-white/10">
                       <Download className="w-2.5 h-2.5 text-[#e50914]" />
@@ -272,7 +336,7 @@ export const FreeMoviesPage: React.FC = () => {
                         <span>{String(doc.year).slice(0, 4)}</span>
                       </span>
                     ) : (
-                      <span>Classic</span>
+                      <span>Feature</span>
                     )}
 
                     <span className="text-[#e50914] font-semibold flex items-center gap-1">
@@ -298,15 +362,18 @@ export const FreeMoviesPage: React.FC = () => {
           </h3>
           <p className="text-sm text-zinc-400 max-w-md mx-auto">
             {activeQuery
-              ? `No public domain titles matched "${activeQuery}". Try another keyword like "chaplin", "horror", or "western".`
+              ? `No public domain feature films matched "${activeQuery}". Try another keyword or change your genre filter.`
               : 'There are currently no items available for this selection.'}
           </p>
-          {activeQuery && (
+          {(activeQuery || selectedGenre !== 'all') && (
             <button
-              onClick={handleClearSearch}
+              onClick={() => {
+                handleClearSearch();
+                setSelectedGenre('all');
+              }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#e50914] hover:bg-[#b80710] text-white text-xs font-bold transition-all shadow-lg shadow-[#e50914]/20"
             >
-              <span>Clear Filter</span>
+              <span>Reset Filters</span>
             </button>
           )}
         </div>

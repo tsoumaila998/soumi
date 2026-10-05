@@ -212,13 +212,25 @@ export const fr = {
   // Free Public Domain Movies
   freeMovies: {
     title: "Films gratuits",
-    subtitle: "Regardez des films du domaine public légalement gratuits via Archive.org",
+    subtitle: "Regardez des longs métrages du domaine public légalement gratuits via Archive.org",
     search: "Rechercher des films gratuits...",
+    genres: {
+      all: "Tous",
+      horror: "Horreur",
+      comedy: "Comédie",
+      scifi: "Science-Fiction",
+      noir: "Film Noir",
+      western: "Western",
+      animation: "Animation",
+    },
+    duration: "Durée",
+    featureFilmsOnly: "Longs métrages uniquement (60+ min)",
     sort: {
       popular: "Plus populaires",
       newest: "Plus récents",
       oldest: "Plus anciens",
       az: "A-Z",
+      longest: "Les plus longs",
     },
     empty: "Aucun film gratuit trouvé.",
     loading: "Chargement...",

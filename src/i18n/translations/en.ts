@@ -212,13 +212,25 @@ export const en = {
   // Free Public Domain Movies
   freeMovies: {
     title: "Free Movies",
-    subtitle: "Watch legally free public domain films from Archive.org",
+    subtitle: "Watch legally free public domain feature films from Archive.org",
     search: "Search free movies...",
+    genres: {
+      all: "All",
+      horror: "Horror",
+      comedy: "Comedy",
+      scifi: "Sci-Fi",
+      noir: "Film Noir",
+      western: "Western",
+      animation: "Animation",
+    },
+    duration: "Duration",
+    featureFilmsOnly: "Feature films only (60+ min)",
     sort: {
       popular: "Most Popular",
       newest: "Newest",
       oldest: "Oldest",
       az: "A-Z",
+      longest: "Longest",
     },
     empty: "No free movies found.",
     loading: "Loading...",

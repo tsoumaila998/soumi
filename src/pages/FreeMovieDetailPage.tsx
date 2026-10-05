@@ -18,6 +18,8 @@ import {
   getThumbnailUrl,
   cleanArchiveText,
   formatCreator,
+  formatDuration,
+  formatDurationFromSeconds,
   ArchiveMetadata,
 } from '../services/archiveService';
 import { VideoPlayer } from '../components/VideoPlayer';
@@ -81,6 +83,20 @@ export const FreeMovieDetailPage: React.FC = () => {
   const year = metadata?.metadata?.year || metadata?.metadata?.date?.slice(0, 4) || '';
   const thumbnailUrl = identifier ? getThumbnailUrl(identifier) : '';
   const archiveItemUrl = identifier ? `https://archive.org/details/${encodeURIComponent(identifier)}` : '';
+
+  // Determine duration formatted as "1h 34m"
+  const rawRuntime = metadata?.metadata?.runtime;
+  let duration = formatDuration(rawRuntime);
+  if (!duration && metadata?.files) {
+    const chosenVideo = metadata.files.find(
+      (f) =>
+        f?.name &&
+        (f.name.toLowerCase().endsWith('.mp4') || (f.format || '').toLowerCase().includes('mpeg4'))
+    );
+    if (chosenVideo?.length) {
+      duration = formatDurationFromSeconds(chosenVideo.length);
+    }
+  }
 
   usePageSEO({
     title: `${displayTitle} — Free Public Domain Movie | SOUMI`,
@@ -198,10 +214,10 @@ export const FreeMovieDetailPage: React.FC = () => {
             </div>
           )}
 
-          {metadata?.metadata?.runtime && (
+          {duration && (
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-zinc-500" />
-              <span>{metadata.metadata.runtime}</span>
+              <span>{duration}</span>
             </div>
           )}
         </div>
