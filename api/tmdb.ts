@@ -10,7 +10,6 @@ interface CacheEntry {
 const memoryCache = new Map<string, CacheEntry>();
 
 export default async function handler(req: any, res: any) {
-  // CORS & Security headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -27,55 +26,78 @@ export default async function handler(req: any, res: any) {
 
   const tmdbApiKey = process.env.TMDB_API_KEY?.trim();
 
-  // 1. Extract sub-path after /api/tmdb/
   let tmdbPath = '';
 
-  // Check Vercel catch-all slug parameter
-  if (req.query?.slug) {
-    if (Array.isArray(req.query.slug)) {
-      tmdbPath = req.query.slug.join('/');
-    } else {
-      tmdbPath = String(req.query.slug);
-    }
-  } else if (req.query?.path) {
-    if (Array.isArray(req.query.path)) {
-      tmdbPath = req.query.path.join('/');
-    } else {
-      tmdbPath = String(req.query.path);
-    }
-  }
-
-  // Fallback to parsing req.url directly
-  if (!tmdbPath && req.url) {
+  if (req.url) {
     try {
       const urlObj = new URL(req.url, 'http://localhost');
-      // e.g. "/api/tmdb/movie/872585/watch/providers" -> "movie/872585/watch/providers"
-      tmdbPath = urlObj.pathname.replace(/^\/?api\/tmdb\/?/, '');
+      const match = urlObj.pathname.match(/^\/?api\/tmdb\/(.+)$/);
+      if (match && match[1]) {
+        tmdbPath = match[1];
+      }
     } catch {
-      tmdbPath = '';
+      // ignore
     }
   }
 
-  // Remove any leading or trailing slashes
+  if (!tmdbPath) {
+    const rawHeader = req.headers?.['x-forwarded-uri'] || req.headers?.['x-matched-path'] || '';
+    if (typeof rawHeader === 'string' && rawHeader) {
+      try {
+        const urlObj = new URL(rawHeader, 'http://localhost');
+        const match = urlObj.pathname.match(/^\/?api\/tmdb\/(.+)$/);
+        if (match && match[1]) {
+          tmdbPath = match[1];
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  if (!tmdbPath && req.query) {
+    if (req.query.path) {
+      tmdbPath = Array.isArray(req.query.path) ? req.query.path.join('/') : String(req.query.path);
+    } else if (req.query.endpoint) {
+      tmdbPath = Array.isArray(req.query.endpoint) ? req.query.endpoint.join('/') : String(req.query.endpoint);
+    }
+  }
+
   tmdbPath = tmdbPath.replace(/^\/+|\/+$/g, '');
 
   if (!tmdbPath) {
-    res.status(400).json({ error: 'Endpoint path is required (e.g. /api/tmdb/movie/popular)' });
+    res.status(400).json({
+      error: 'Endpoint sub-path is required',
+      receivedUrl: req.url || '',
+    });
     return;
   }
 
-  // 2. Collect query parameters (ignoring 'slug' and 'path' used by Vercel dynamic routing)
   const queryParams = new URLSearchParams();
+
+  if (req.url) {
+    try {
+      const urlObj = new URL(req.url, 'http://localhost');
+      for (const [key, value] of urlObj.searchParams.entries()) {
+        if (key !== 'path' && key !== 'endpoint' && key !== 'api_key' && value) {
+          queryParams.set(key, value);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   if (req.query && typeof req.query === 'object') {
     for (const [key, value] of Object.entries(req.query)) {
       if (
-        key !== 'slug' &&
         key !== 'path' &&
+        key !== 'endpoint' &&
         key !== 'api_key' &&
         value !== undefined &&
         value !== null &&
-        value !== ''
+        value !== '' &&
+        !queryParams.has(key)
       ) {
         if (Array.isArray(value)) {
           queryParams.set(key, value[0]);
@@ -86,26 +108,10 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // Also parse search parameters from req.url as fallback
-  if (req.url) {
-    try {
-      const urlObj = new URL(req.url, 'http://localhost');
-      for (const [key, value] of urlObj.searchParams.entries()) {
-        if (key !== 'slug' && key !== 'path' && key !== 'api_key' && !queryParams.has(key) && value) {
-          queryParams.set(key, value);
-        }
-      }
-    } catch {
-      // ignore URL parsing error
-    }
-  }
-
-  // Default language fallback if not passed
   if (!queryParams.has('language')) {
     queryParams.set('language', 'en-US');
   }
 
-  // 3. Cache lookup
   const sortedQuery = Array.from(queryParams.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${k}=${v}`)
@@ -120,25 +126,21 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  // 4. Verify API key
   if (!tmdbApiKey) {
     res.status(503).json({
-      error: 'TMDB_API_KEY is not configured on Vercel environment variables',
+      error: 'TMDB_API_KEY is not configured',
       code: 'MISSING_API_KEY',
       path: tmdbPath,
     });
     return;
   }
 
-  // 5. Proxy request to TMDb API v3
   queryParams.set('api_key', tmdbApiKey);
   const targetUrl = `https://api.themoviedb.org/3/${tmdbPath}?${queryParams.toString()}`;
 
   try {
     const tmdbResponse = await fetch(targetUrl, {
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: { Accept: 'application/json' },
     });
 
     const data = await tmdbResponse.json();
@@ -158,7 +160,7 @@ export default async function handler(req: any, res: any) {
       });
     }
   } catch (error: any) {
-    console.error('Error proxying to TMDb in Vercel serverless function:', error.message);
+    console.error('Error proxying to TMDb:', error.message);
     res.status(502).json({
       error: 'Unable to connect to TMDb API',
       code: 'NETWORK_ERROR',
