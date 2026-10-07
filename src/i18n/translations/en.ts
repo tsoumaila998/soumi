@@ -243,5 +243,17 @@ export const en = {
     publicDomainBadge: "Public Domain",
     details: "Film Details",
     errorLoading: "Failed to load movie information. Please try again later.",
+  },
+
+  // Free Streaming Platforms
+  freeStreaming: {
+    title: "Watch FREE on other platforms",
+    subtitle: "These platforms offer legal, ad-supported free streaming. Availability varies by region.",
+    searchOn: "Search on",
+    badges: {
+      adSupported: "Ad-supported",
+      publicDomain: "Public Domain",
+      free: "Free",
+    },
   }
 };

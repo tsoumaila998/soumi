@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Tv, ExternalLink, Globe, Play, Film, ShoppingBag } from 'lucide-react';
 import {
   getWatchProviders,
@@ -17,6 +17,26 @@ interface WatchProvidersProps {
 
 // Common ISO 3166-1 alpha-2 country names for display
 const COMMON_COUNTRY_NAMES: Record<string, { en: string; fr: string }> = {
+  // West Africa & African Countries
+  CI: { en: "Côte d'Ivoire", fr: "Côte d'Ivoire" },
+  ML: { en: 'Mali', fr: 'Mali' },
+  GN: { en: 'Guinea', fr: 'Guinée' },
+  BF: { en: 'Burkina Faso', fr: 'Burkina Faso' },
+  SN: { en: 'Senegal', fr: 'Sénégal' },
+  GH: { en: 'Ghana', fr: 'Ghana' },
+  NG: { en: 'Nigeria', fr: 'Nigéria' },
+  TG: { en: 'Togo', fr: 'Togo' },
+  BJ: { en: 'Benin', fr: 'Bénin' },
+  NE: { en: 'Niger', fr: 'Niger' },
+  CM: { en: 'Cameroon', fr: 'Cameroun' },
+  MA: { en: 'Morocco', fr: 'Maroc' },
+  DZ: { en: 'Algeria', fr: 'Algérie' },
+  TN: { en: 'Tunisia', fr: 'Tunisie' },
+  EG: { en: 'Egypt', fr: 'Égypte' },
+  ZA: { en: 'South Africa', fr: 'Afrique du Sud' },
+  KE: { en: 'Kenya', fr: 'Kenya' },
+
+  // Global & Popular Streaming Markets
   US: { en: 'United States', fr: 'États-Unis' },
   FR: { en: 'France', fr: 'France' },
   GB: { en: 'United Kingdom', fr: 'Royaume-Uni' },
@@ -39,16 +59,43 @@ const COMMON_COUNTRY_NAMES: Record<string, { en: string; fr: string }> = {
   PT: { en: 'Portugal', fr: 'Portugal' },
   IE: { en: 'Ireland', fr: 'Irlande' },
   NZ: { en: 'New Zealand', fr: 'Nouvelle-Zélande' },
-  ZA: { en: 'South Africa', fr: 'Afrique du Sud' },
   KR: { en: 'South Korea', fr: 'Corée du Sud' },
 };
 
+// Priority list for West African and African countries to feature first in the selector
+const PRIORITY_AFRICAN_COUNTRIES = [
+  'CI',
+  'ML',
+  'GN',
+  'BF',
+  'SN',
+  'GH',
+  'NG',
+  'TG',
+  'BJ',
+  'NE',
+  'CM',
+  'MA',
+  'DZ',
+  'TN',
+  'EG',
+  'ZA',
+  'KE',
+];
+
 function detectCountryCode(): string {
   try {
-    const locale = navigator.language || (navigator.languages && navigator.languages[0]) || '';
-    const parts = locale.split('-');
-    if (parts.length > 1 && parts[1].length === 2) {
-      return parts[1].toUpperCase();
+    const candidates =
+      navigator.languages && navigator.languages.length > 0
+        ? navigator.languages
+        : [navigator.language || ''];
+
+    for (const loc of candidates) {
+      if (!loc) continue;
+      const parts = loc.split(/[-_]/);
+      if (parts.length > 1 && parts[1].length === 2) {
+        return parts[1].toUpperCase();
+      }
     }
   } catch {
     // fallback
@@ -77,13 +124,18 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
 
       if (res && res.results) {
         const detected = detectCountryCode();
-        // If detected country is in the TMDb results, default to it
+        // Preference chain:
+        // 1. User's detected region (if available in TMDb results)
+        // 2. "US"
+        // 3. "FR"
+        // 4. First available country
         if (res.results[detected]) {
           setSelectedCountry(detected);
         } else if (res.results['US']) {
           setSelectedCountry('US');
+        } else if (res.results['FR']) {
+          setSelectedCountry('FR');
         } else {
-          // Default to the first available country in results
           const availableKeys = Object.keys(res.results);
           if (availableKeys.length > 0) {
             setSelectedCountry(availableKeys[0]);
@@ -116,9 +168,6 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
   const hasAnyProvider =
     uniqueStream.length > 0 || rentProviders.length > 0 || buyProviders.length > 0;
 
-  // Available country codes in results sorted by display name
-  const availableCountries = data?.results ? Object.keys(data.results).sort() : [];
-
   const getCountryName = (code: string): string => {
     const entry = COMMON_COUNTRY_NAMES[code];
     if (entry) {
@@ -126,6 +175,34 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
     }
     return code;
   };
+
+  // Available country codes in results sorted with African priority when > 10 options
+  const sortedAvailableCountries = useMemo(() => {
+    if (!data?.results) return [];
+    const keys = Object.keys(data.results);
+    const africanSet = new Set(PRIORITY_AFRICAN_COUNTRIES);
+
+    return keys.sort((a, b) => {
+      if (keys.length > 10) {
+        const aIsAfrican = africanSet.has(a);
+        const bIsAfrican = africanSet.has(b);
+
+        if (aIsAfrican && !bIsAfrican) return -1;
+        if (!aIsAfrican && bIsAfrican) return 1;
+
+        if (aIsAfrican && bIsAfrican) {
+          return (
+            PRIORITY_AFRICAN_COUNTRIES.indexOf(a) -
+            PRIORITY_AFRICAN_COUNTRIES.indexOf(b)
+          );
+        }
+      }
+
+      const nameA = getCountryName(a);
+      const nameB = getCountryName(b);
+      return nameA.localeCompare(nameB);
+    });
+  }, [data?.results, language]);
 
   const currentCountryName = getCountryName(selectedCountry);
 
@@ -196,7 +273,7 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
         </div>
 
         {/* Country Selector Dropdown */}
-        {availableCountries.length > 0 && (
+        {sortedAvailableCountries.length > 0 && (
           <div className="flex items-center gap-2 text-xs">
             <Globe className="w-4 h-4 text-zinc-400" />
             <span className="text-zinc-400 font-medium">
@@ -208,11 +285,14 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
               className="bg-[#161622] hover:bg-[#1f1f2e] text-zinc-200 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-[#e50914] cursor-pointer transition-colors"
               aria-label={t('watchProviders.changeCountry')}
             >
-              {availableCountries.map((code) => (
-                <option key={code} value={code} className="bg-[#161622] text-white">
-                  {getCountryName(code)} ({code})
-                </option>
-              ))}
+              {sortedAvailableCountries.map((code) => {
+                const isAfrican = PRIORITY_AFRICAN_COUNTRIES.includes(code);
+                return (
+                  <option key={code} value={code} className="bg-[#161622] text-white">
+                    {getCountryName(code)} ({code}){isAfrican ? ' ★' : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
         )}
@@ -319,7 +399,7 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
               <p className="text-sm text-zinc-300 max-w-md mx-auto">
                 {t('watchProviders.noProviders', { country: currentCountryName })}
               </p>
-              {availableCountries.length > 1 && (
+              {sortedAvailableCountries.length > 1 && (
                 <p className="text-xs text-zinc-500">
                   {language === 'fr'
                     ? 'Sélectionnez un autre pays dans le menu déroulant ci-dessus.'

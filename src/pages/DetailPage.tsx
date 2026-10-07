@@ -13,6 +13,7 @@ import {
 } from '../services/tmdb';
 import { CastList } from '../components/CastList';
 import { WatchProviders } from '../components/WatchProviders';
+import { FreeStreamingLinks } from '../components/FreeStreamingLinks';
 import { MediaCard } from '../components/MediaCard';
 import { TrailerModal } from '../components/TrailerModal';
 import { ImageWithFallback } from '../components/ImageWithFallback';
@@ -345,6 +346,9 @@ export const DetailPage: React.FC = () => {
           mediaType={item.mediaType}
           title={displayTitle}
         />
+
+        {/* Watch FREE on other platforms Section */}
+        <FreeStreamingLinks title={displayTitle} />
 
         {/* Cast Section (First 10 actors) */}
         {cast.length > 0 && (

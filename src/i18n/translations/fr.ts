@@ -243,5 +243,17 @@ export const fr = {
     publicDomainBadge: "Domaine public",
     details: "Détails du film",
     errorLoading: "Impossible de charger les informations du film. Veuillez réessayer plus tard.",
+  },
+
+  // Free Streaming Platforms
+  freeStreaming: {
+    title: "Regarder GRATUITEMENT sur d'autres plateformes",
+    subtitle: "Ces plateformes proposent du streaming gratuit légal, financé par la publicité. Disponibilité variable selon la région.",
+    searchOn: "Rechercher sur",
+    badges: {
+      adSupported: "Avec publicité",
+      publicDomain: "Domaine public",
+      free: "Gratuit",
+    },
   }
 };
