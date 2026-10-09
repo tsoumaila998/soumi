@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Tv, ExternalLink, Globe, Play, Film, ShoppingBag } from 'lucide-react';
+import {
+  Tv,
+  ExternalLink,
+  Globe,
+  Play,
+  Film,
+  ShoppingBag,
+  ChevronDown,
+} from 'lucide-react';
 import {
   getWatchProviders,
   getProviderLogoUrl,
@@ -112,6 +120,7 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<WatchProvidersData | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string>('US');
+  const [isRentBuyExpanded, setIsRentBuyExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -165,8 +174,8 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
   const rentProviders: WatchProviderItem[] = countryProviders?.rent || [];
   const buyProviders: WatchProviderItem[] = countryProviders?.buy || [];
 
-  const hasAnyProvider =
-    uniqueStream.length > 0 || rentProviders.length > 0 || buyProviders.length > 0;
+  const hasPaidProviders = rentProviders.length > 0 || buyProviders.length > 0;
+  const hasAnyProvider = uniqueStream.length > 0 || hasPaidProviders;
 
   const getCountryName = (code: string): string => {
     const entry = COMMON_COUNTRY_NAMES[code];
@@ -206,7 +215,67 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
 
   const currentCountryName = getCountryName(selectedCountry);
 
-  const renderProviderGroup = (
+  // Render Stream Cards (Prominent, large)
+  const renderStreamProviderGroup = (providers: WatchProviderItem[]) => {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400">
+              <Play className="w-4 h-4 fill-current" />
+            </span>
+            <div>
+              <h4 className="text-base font-bold text-white tracking-wide">
+                {t('watchProviders.streamFree')}
+              </h4>
+              <p className="text-xs text-zinc-400">
+                Subscription, Free, or Ad-supported streaming
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            {providers.length} {providers.length > 1 ? 'options' : 'option'}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-3 pt-1">
+          {providers.map((p) => {
+            const logoUrl = getProviderLogoUrl(p.logo_path);
+            return (
+              <div
+                key={p.provider_id}
+                className="group relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/40 transition-all duration-200 shadow-sm"
+                title={p.provider_name}
+              >
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={p.provider_name}
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                    className="w-9 h-9 rounded-lg object-cover shadow bg-zinc-900 border border-white/10 shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400 shrink-0">
+                    {p.provider_name.slice(0, 2)}
+                  </div>
+                )}
+                <span className="text-xs sm:text-sm font-semibold text-zinc-100 group-hover:text-white transition-colors truncate max-w-[150px]">
+                  {p.provider_name}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Render Compact Rent/Buy Sub-groups (Muted, smaller)
+  const renderPaidProviderGroup = (
     label: string,
     icon: React.ReactNode,
     providers: WatchProviderItem[],
@@ -218,17 +287,21 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <span className={`p-1.5 rounded-lg ${accentBadge}`}>{icon}</span>
-          <h4 className="text-sm font-bold text-white tracking-wide">{label}</h4>
-          <span className="text-xs text-zinc-500 font-semibold">({providers.length})</span>
+          <h5 className="text-xs font-bold text-zinc-300 tracking-wide uppercase">
+            {label}
+          </h5>
+          <span className="text-[11px] text-zinc-500 font-semibold">
+            ({providers.length})
+          </span>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2.5">
           {providers.map((p) => {
             const logoUrl = getProviderLogoUrl(p.logo_path);
             return (
               <div
                 key={p.provider_id}
-                className="group relative flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-200"
+                className="group relative flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/15 transition-all duration-200"
                 title={p.provider_name}
               >
                 {logoUrl ? (
@@ -237,17 +310,17 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
                     alt={p.provider_name}
                     referrerPolicy="no-referrer"
                     loading="lazy"
-                    className="w-8 h-8 rounded-lg object-cover shadow-sm bg-zinc-900 border border-white/10 shrink-0"
+                    className="w-7 h-7 rounded-md object-cover shadow-xs bg-zinc-900 border border-white/10 shrink-0 opacity-90 group-hover:opacity-100"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400 shrink-0">
+                  <div className="w-7 h-7 rounded-md bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-400 shrink-0">
                     {p.provider_name.slice(0, 2)}
                   </div>
                 )}
-                <span className="text-xs font-medium text-zinc-200 group-hover:text-white transition-colors truncate max-w-[130px]">
+                <span className="text-xs font-medium text-zinc-300 group-hover:text-white transition-colors truncate max-w-[130px]">
                   {p.provider_name}
                 </span>
               </div>
@@ -259,7 +332,7 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
   };
 
   return (
-    <section className="space-y-6 pt-10 border-t border-white/5" id="where-to-watch">
+    <section className="space-y-5 pt-10 border-t border-white/5" id="where-to-watch">
       {/* Header bar with Country Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -300,98 +373,123 @@ export const WatchProviders: React.FC<WatchProvidersProps> = ({
 
       {/* Loading Skeleton */}
       {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-pulse">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
-              <div className="w-24 h-4 bg-white/10 rounded" />
-              <div className="flex gap-2">
-                <div className="w-9 h-9 bg-white/10 rounded-lg" />
-                <div className="w-9 h-9 bg-white/10 rounded-lg" />
-              </div>
-            </div>
-          ))}
+        <div className="p-6 rounded-2xl bg-white/5 border border-white/5 animate-pulse space-y-4">
+          <div className="w-36 h-5 bg-white/10 rounded" />
+          <div className="flex gap-3">
+            <div className="w-32 h-12 bg-white/10 rounded-xl" />
+            <div className="w-32 h-12 bg-white/10 rounded-xl" />
+          </div>
         </div>
       )}
 
       {/* Loaded Content */}
       {!loading && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {hasAnyProvider ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 rounded-2xl bg-[#12121a] border border-white/5 shadow-inner">
-              {/* 1. Stream (Subscription / Free / Ads) */}
-              <div className="space-y-3">
+            <>
+              {/* 1. Main Stream Section (Full width, prominent) */}
+              <div className="p-6 rounded-2xl bg-[#12121a] border border-white/10 shadow-inner">
                 {uniqueStream.length > 0 ? (
-                  renderProviderGroup(
-                    t('watchProviders.stream'),
-                    <Play className="w-3.5 h-3.5 text-emerald-400 fill-current" />,
-                    uniqueStream,
-                    'bg-emerald-500/15 text-emerald-400'
-                  )
+                  renderStreamProviderGroup(uniqueStream)
                 ) : (
-                  <div className="space-y-2 opacity-50">
-                    <div className="flex items-center gap-2">
-                      <span className="p-1.5 rounded-lg bg-white/5 text-zinc-500">
-                        <Play className="w-3.5 h-3.5" />
-                      </span>
-                      <h4 className="text-sm font-bold text-zinc-400">
-                        {t('watchProviders.stream')}
+                  <div className="py-2 flex items-center gap-3 text-zinc-400">
+                    <span className="p-2 rounded-xl bg-white/5 text-zinc-500">
+                      <Play className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-semibold text-zinc-300">
+                        {t('watchProviders.streamFree')}
                       </h4>
+                      <p className="text-xs text-zinc-500 mt-0.5">
+                        {t('watchProviders.noStreamAvailable', {
+                          country: currentCountryName,
+                        })}
+                      </p>
                     </div>
-                    <p className="text-xs text-zinc-500 italic">—</p>
                   </div>
                 )}
               </div>
 
-              {/* 2. Rent */}
-              <div className="space-y-3 md:border-l md:border-white/5 md:pl-6">
-                {rentProviders.length > 0 ? (
-                  renderProviderGroup(
-                    t('watchProviders.rent'),
-                    <Film className="w-3.5 h-3.5 text-blue-400" />,
-                    rentProviders,
-                    'bg-blue-500/15 text-blue-400'
-                  )
-                ) : (
-                  <div className="space-y-2 opacity-50">
-                    <div className="flex items-center gap-2">
-                      <span className="p-1.5 rounded-lg bg-white/5 text-zinc-500">
-                        <Film className="w-3.5 h-3.5" />
+              {/* 2. Rent & Buy Collapsible Section (Muted, below Stream) */}
+              {hasPaidProviders && (
+                <div className="rounded-2xl bg-[#12121a]/70 border border-white/10 overflow-hidden transition-all duration-200">
+                  {/* Collapsible Header Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsRentBuyExpanded(!isRentBuyExpanded)}
+                    className="w-full flex items-center justify-between p-4 sm:px-6 hover:bg-white/[0.03] transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-[#e50914]"
+                    aria-expanded={isRentBuyExpanded}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="p-2 rounded-xl bg-white/5 text-zinc-400">
+                        <ShoppingBag className="w-4 h-4" />
                       </span>
-                      <h4 className="text-sm font-bold text-zinc-400">
-                        {t('watchProviders.rent')}
-                      </h4>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-zinc-200 tracking-wide">
+                            {t('watchProviders.rentBuyTitle')}
+                          </h4>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-zinc-400">
+                            {rentProviders.length + buyProviders.length}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-zinc-500">
+                          {t('watchProviders.rentBuySubtitle')}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-zinc-500 italic">—</p>
-                  </div>
-                )}
-              </div>
 
-              {/* 3. Buy */}
-              <div className="space-y-3 md:border-l md:border-white/5 md:pl-6">
-                {buyProviders.length > 0 ? (
-                  renderProviderGroup(
-                    t('watchProviders.buy'),
-                    <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />,
-                    buyProviders,
-                    'bg-amber-500/15 text-amber-400'
-                  )
-                ) : (
-                  <div className="space-y-2 opacity-50">
-                    <div className="flex items-center gap-2">
-                      <span className="p-1.5 rounded-lg bg-white/5 text-zinc-500">
-                        <ShoppingBag className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
+                      <span>
+                        {isRentBuyExpanded
+                          ? t('watchProviders.collapse')
+                          : t('watchProviders.expand')}
                       </span>
-                      <h4 className="text-sm font-bold text-zinc-400">
-                        {t('watchProviders.buy')}
-                      </h4>
+                      <ChevronDown
+                        className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ${
+                          isRentBuyExpanded ? 'rotate-180 text-white' : ''
+                        }`}
+                      />
                     </div>
-                    <p className="text-xs text-zinc-500 italic">—</p>
+                  </button>
+
+                  {/* Collapsible Content */}
+                  <div
+                    className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      isRentBuyExpanded
+                        ? 'max-h-[600px] opacity-100 pb-5 px-4 sm:px-6'
+                        : 'max-h-0 opacity-0 px-4 sm:px-6'
+                    }`}
+                  >
+                    <div
+                      className={`grid gap-6 pt-4 border-t border-white/5 ${
+                        rentProviders.length > 0 && buyProviders.length > 0
+                          ? 'grid-cols-1 md:grid-cols-2'
+                          : 'grid-cols-1'
+                      }`}
+                    >
+                      {rentProviders.length > 0 &&
+                        renderPaidProviderGroup(
+                          t('watchProviders.rent'),
+                          <Film className="w-3.5 h-3.5 text-blue-400" />,
+                          rentProviders,
+                          'bg-blue-500/15 text-blue-400'
+                        )}
+
+                      {buyProviders.length > 0 &&
+                        renderPaidProviderGroup(
+                          t('watchProviders.buy'),
+                          <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />,
+                          buyProviders,
+                          'bg-amber-500/15 text-amber-400'
+                        )}
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
+              )}
+            </>
           ) : (
-            /* Graceful Empty State */
+            /* Clean Empty State */
             <div className="p-6 rounded-2xl bg-[#12121a] border border-white/5 text-center space-y-3">
               <div className="w-12 h-12 mx-auto rounded-full bg-white/5 flex items-center justify-center text-zinc-400">
                 <Tv className="w-6 h-6" />
